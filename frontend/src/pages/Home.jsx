@@ -51,11 +51,16 @@ const Home = () => {
                     <button className="lift-off-btn">
                         <span className="apple-icon"></span> Download for MacOS
                     </button>
-                    <button className="btn-hero-secondary">Explore use cases</button>
+                    <button
+                        className="btn-hero-secondary"
+                        onClick={() => document.getElementById('tools-section')?.scrollIntoView({ behavior: 'smooth' })}
+                    >
+                        Explore use cases
+                    </button>
                 </div>
             </section>
 
-            <section className="tools-section">
+            <section className="tools-section" id="tools-section">
                 <h2 className="section-title">Available Tools</h2>
                 <div className="tools-grid">
                     {tools.map(tool => (
