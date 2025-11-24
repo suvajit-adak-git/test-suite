@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import { uploadSvnFile, uploadReviewChecklist, compareBoth } from '../api/svnApi';
 import ComparisonTable from '../components/ComparisonTable';
 import ChecklistReviewer from '../components/tools/ChecklistReviewer';
+import TCTraceability from '../components/tools/TCTraceability';
 
 const Tool = () => {
     const { toolId } = useParams();
@@ -250,7 +251,8 @@ const Tool = () => {
                     </h1>
                     {toolId === 'svn' ? renderSvnInspector() :
                         toolId === 'checklist' ? <ChecklistReviewer /> :
-                            renderDefault()}
+                            toolId === 'tc-traceability' ? <TCTraceability /> :
+                                renderDefault()}
                 </div>
             </section>
         </Layout>

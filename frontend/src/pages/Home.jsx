@@ -29,6 +29,13 @@ const Home = () => {
             description: 'Compare SVN vs Checklist data',
             route: '/compare',
             previewText: 'COMPARE'
+        },
+        {
+            id: 'tc-traceability',
+            title: 'TC Traceability',
+            description: 'Validate TC traceability',
+            route: '/tc-traceability',
+            previewText: 'TC'
         }
     ];
 
