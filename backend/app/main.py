@@ -1,6 +1,7 @@
 import logging
 from fastapi import FastAPI
 from app.api.endpoints import router as api_router
+from app.api.hyperlink_routes import router as hyperlink_router
 from fastapi.middleware.cors import CORSMiddleware
 
 # Configure logging
@@ -18,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api")
+app.include_router(hyperlink_router, prefix="/api/hyperlinks", tags=["Hyperlinks"])
 
 @app.get("/health")
 async def health():

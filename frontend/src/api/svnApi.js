@@ -48,3 +48,36 @@ export const compareBoth = async (payload) => {
 
     return response.json();
 };
+export const extractHyperlinks = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/hyperlinks/extract-hyperlinks/`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to extract hyperlinks');
+    }
+
+    return response.json();
+};
+
+export const updateBuild = async (file, newBuild) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('new_build', newBuild);
+
+    const response = await fetch(`${API_URL}/hyperlinks/update-build/`, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to update build');
+    }
+
+    return response.blob();
+};

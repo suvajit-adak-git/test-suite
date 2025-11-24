@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { uploadSvnFile, uploadReviewChecklist, compareBoth } from '../api/svnApi';
 import ComparisonTable from '../components/ComparisonTable';
+import ChecklistReviewer from '../components/tools/ChecklistReviewer';
 
 const Tool = () => {
     const { toolId } = useParams();
@@ -247,7 +248,9 @@ const Tool = () => {
                     <h1 style={{ fontSize: '2.5rem', marginBottom: 'var(--space-md)' }}>
                         Tool: <span className="text-gradient" style={{ textTransform: 'capitalize' }}>{toolId}</span>
                     </h1>
-                    {toolId === 'svn' ? renderSvnInspector() : renderDefault()}
+                    {toolId === 'svn' ? renderSvnInspector() :
+                        toolId === 'checklist' ? <ChecklistReviewer /> :
+                            renderDefault()}
                 </div>
             </section>
         </Layout>
