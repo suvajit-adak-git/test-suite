@@ -157,7 +157,10 @@ def compare_data(svn_rows: List[Dict[str, Any]], checklist_rows: List[Dict[str, 
                         result_entry["inter_sheet_conflict"] = True
                         result_entry["conflict_comment"] = best_c_match["conflict_comment"]
                     
-                    if version_equal:
+                    # Treat inter-sheet conflicts as mismatches, even if max version matches SVN
+                    if best_c_match["inter_sheet_conflict"]:
+                        mismatches.append(result_entry)
+                    elif version_equal:
                         matches.append(result_entry)
                     else:
                         mismatches.append(result_entry)
@@ -233,7 +236,10 @@ def compare_data(svn_rows: List[Dict[str, Any]], checklist_rows: List[Dict[str, 
                     result_entry["inter_sheet_conflict"] = True
                     result_entry["conflict_comment"] = c_entry["conflict_comment"]
                 
-                if version_equal:
+                # Treat inter-sheet conflicts as mismatches, even if max version matches SVN
+                if c_entry["inter_sheet_conflict"]:
+                    mismatches.append(result_entry)
+                elif version_equal:
                     matches.append(result_entry)
                 else:
                     mismatches.append(result_entry)

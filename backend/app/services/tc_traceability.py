@@ -75,8 +75,38 @@ def validate_tc_traceability(file_path: str) -> Dict:
             results.append(result)
             continue
         
-        # Parse TC values (e.g., "TC_1, TC_2, TC_3")
-        expected_tcs = [tc.strip() for tc in re.split(r'[,;]', tc_value)]
+        # Auto-correct common TC formatting mistakes
+        # - "tc_1" → "TC_1" (lowercase TC prefix)
+        # - "TC 1" → "TC_1" (space instead of underscore)
+        # - "TC1" → "TC_1" (no separator)
+        # IMPORTANT: Only normalize the "TC" prefix, preserve case in the rest (e.g., "Manual Analysis")
+        tc_value_corrected = tc_value
+        # Replace "tc " (lowercase with space) followed by alphanumeric with "TC_"
+        tc_value_corrected = re.sub(r'\btc\s+(\w)', r'TC_\1', tc_value_corrected, flags=re.IGNORECASE)
+        # Replace "tc" (any case) followed immediately by digit with "TC_"
+        tc_value_corrected = re.sub(r'\btc(?=\d)', r'TC_', tc_value_corrected, flags=re.IGNORECASE)
+        # Normalize just the "TC" prefix to uppercase (for cases like "tc_1" → "TC_1")
+        tc_value_corrected = re.sub(r'\btc(_)', r'TC\1', tc_value_corrected, flags=re.IGNORECASE)
+        
+        # Parse TC values - handles:
+        # - Comma/semicolon separated: "TC_1, TC_2, TC_3"
+        # - Space separated: "TC_1 TC_2 TC_3 TC_4"  
+        # - TC names with spaces: "TC_5_Manual Analysis"
+        # Strategy: Replace commas/semicolons with |, then extract TCs using lookahead
+        normalized = re.sub(r'\s*[,;]\s*', '|', tc_value_corrected)
+        parts = normalized.split('|')
+        expected_tcs = []
+        for part in parts:
+            part = part.strip()
+            if not part:
+                continue
+            # Match TC_ followed by anything until we see (space + TC_) or end of string
+            # This preserves spaces within TC names but splits on TC_ boundaries
+            matches = re.findall(r'TC_(?:(?!\s+TC_).)+', part)
+            if matches:
+                expected_tcs.extend([m.strip() for m in matches])
+            elif part.startswith('TC_'):
+                expected_tcs.append(part)
         result["expected_tcs"] = expected_tcs
         
         # Search for requirement ID in all sheets except General
