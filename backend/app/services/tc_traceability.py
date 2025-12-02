@@ -1,7 +1,28 @@
 import openpyxl
-from typing import List, Dict
+from typing import List, Dict, Optional
 import re
 from fastapi import HTTPException
+
+
+def find_last_note_row_index(sheet) -> Optional[int]:
+    """
+    Find the row index of the last occurrence of #Note or # Note marker.
+    
+    Args:
+        sheet: openpyxl worksheet
+        
+    Returns:
+        Row index (1-indexed) of the last #Note marker, or None if not found
+    """
+    last_note_row = None
+    for row_idx, row in enumerate(sheet.iter_rows(), start=1):
+        for cell in row:
+            cell_value = str(cell.value).strip() if cell.value else ""
+            # Case-insensitive match for "#Note" or "# Note"
+            if re.search(r'#\s*note', cell_value, re.IGNORECASE):
+                last_note_row = row_idx
+                break
+    return last_note_row
 
 
 def validate_tc_traceability(file_path: str) -> Dict:
@@ -25,6 +46,7 @@ def validate_tc_traceability(file_path: str) -> Dict:
     
     general_sheet = wb['General']
     results = []
+    warnings = []
     
     # Find the header row and column indices
     req_id_col = None
@@ -110,20 +132,60 @@ def validate_tc_traceability(file_path: str) -> Dict:
         result["expected_tcs"] = expected_tcs
         
         # Search for requirement ID in all sheets except General
-        found_sheets = []
+        # Track both the sheet name and the row where it was found
+        found_sheets_data = {}  # {sheet_name: [row_indices]}
+        
         for sheet_name in wb.sheetnames:
             if sheet_name == "General":
                 continue
             
             sheet = wb[sheet_name]
-            for row in sheet.iter_rows():
+            for row_idx, row in enumerate(sheet.iter_rows(), start=1):
                 for cell in row:
                     cell_value = str(cell.value).strip() if cell.value else ""
                     if req_id in cell_value:
-                        found_sheets.append(sheet_name)
+                        if sheet_name not in found_sheets_data:
+                            found_sheets_data[sheet_name] = []
+                        found_sheets_data[sheet_name].append(row_idx)
                         break
-                if sheet_name in found_sheets:
-                    break
+        
+        # Process found sheets with #Note filtering for unexpected sheets
+        found_sheets = []
+        unexpected_sheets_in_notes = []
+        
+        for sheet_name, row_indices in found_sheets_data.items():
+            # Check if this is an unexpected sheet
+            is_unexpected = sheet_name not in expected_tcs
+            
+            if is_unexpected:
+                # Find the last #Note row in this sheet
+                sheet = wb[sheet_name]
+                last_note_row = find_last_note_row_index(sheet)
+                
+                # Determine if requirement appears before or after #Note
+                has_before_note = False
+                has_after_note = False
+                
+                for row_idx in row_indices:
+                    if last_note_row is None:
+                        # No #Note marker found, treat as "before note"
+                        has_before_note = True
+                    elif row_idx < last_note_row:
+                        has_before_note = True
+                    else:
+                        has_after_note = True
+                
+                # If appears before #Note (or no #Note exists), it's a failure
+                if has_before_note:
+                    found_sheets.append(sheet_name)
+                # If appears only after #Note, add to warnings
+                elif has_after_note:
+                    unexpected_sheets_in_notes.append(sheet_name)
+                    warning_msg = f"Requirement {req_id} is present in the note section of sheet {sheet_name}"
+                    warnings.append(warning_msg)
+            else:
+                # Expected sheet - add normally without #Note filtering
+                found_sheets.append(sheet_name)
         
         result["found_in_sheets"] = found_sheets
         
@@ -151,7 +213,8 @@ def validate_tc_traceability(file_path: str) -> Dict:
         "summary": {
             "total_requirements": total,
             "passed": passed,
-            "failed": failed
+            "failed": failed,
+            "warnings": warnings
         },
         "results": results
     }
