@@ -38,14 +38,14 @@ def validate_tc_traceability(file_path: str) -> Dict:
             if cell_value == "Requirements ID":
                 req_id_col = col_idx
                 header_row = row_idx
-            elif cell_value == "TC":
+            elif cell_value == "Test Case associated":
                 tc_col = col_idx
     
     if not req_id_col or not tc_col:
         wb.close()
         raise HTTPException(
             status_code=400, 
-            detail="Could not find 'Requirements ID' or 'TC' columns in General sheet"
+            detail="Could not find 'Requirements ID' or 'Test Case associated' columns in General sheet"
         )
     
     # Extract requirements starting from row after header
