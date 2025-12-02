@@ -120,33 +120,25 @@ const TCTraceability = () => {
             }
 
             setLoading(true);
+            const formData = new FormData();
+            formData.append('tc_file', file);
+            formData.append('cia_file', ciaFile);
 
-            // Mock CIA comparison results (backend not yet implemented)
-            setTimeout(() => {
-                const mockCIAResults = {
-                    summary: {
-                        total_requirements: 10,
-                        passed: 7,
-                        failed: 3
+            try {
+                const response = await axios.post('http://localhost:8000/api/compare-cia', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
                     },
-                    results: [
-                        { tc_requirement: "REQ_001", cia_requirement: "REQ_001", status: "pass" },
-                        { tc_requirement: "REQ_002", cia_requirement: "REQ_002", status: "pass" },
-                        { tc_requirement: "REQ_003", cia_requirement: "REQ_003", status: "pass" },
-                        { tc_requirement: "REQ_004", cia_requirement: "REQ_004", status: "pass" },
-                        { tc_requirement: "REQ_005", cia_requirement: "REQ_005", status: "pass" },
-                        { tc_requirement: "REQ_006", cia_requirement: "REQ_006", status: "pass" },
-                        { tc_requirement: "REQ_007", cia_requirement: "REQ_007", status: "pass" },
-                        { tc_requirement: "REQ_008", cia_requirement: "REQ_010", status: "fail" },
-                        { tc_requirement: "REQ_009", cia_requirement: "", status: "fail" },
-                        { tc_requirement: "", cia_requirement: "REQ_011", status: "fail" }
-                    ]
-                };
-                setResults(mockCIAResults);
+                });
+                setResults(response.data);
                 setError(null);
                 setActiveFilter('failed');
+            } catch (err) {
+                setError(err.response ? err.response.data.detail : 'An error occurred during CIA comparison');
+                setResults(null);
+            } finally {
                 setLoading(false);
-            }, 1000);
+            }
         }
     };
 

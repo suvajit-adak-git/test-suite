@@ -225,3 +225,63 @@ async def validate_tc_traceability_endpoint(file: UploadFile = File(...)):
             dest.unlink()
         except Exception:
             pass
+
+@router.post("/compare-cia")
+async def compare_cia_endpoint(
+    tc_file: UploadFile = File(...),
+    cia_file: UploadFile = File(...)
+):
+    """
+    Compare requirement IDs between TC (Traceability) file and CIA file.
+    Both files should be Excel files with a 'General' sheet containing 'Requirements ID' column.
+    """
+    from app.services.cia_compare import compare_tc_vs_cia
+    
+    # Validate TC file
+    tc_fname = tc_file.filename or "tc_file.xlsx"
+    if not tc_fname.lower().endswith((".xls", ".xlsx", ".xlsm")):
+        raise HTTPException(status_code=400, detail="TC file must be .xls, .xlsx, or .xlsm")
+    
+    # Validate CIA file
+    cia_fname = cia_file.filename or "cia_file.xlsx"
+    if not cia_fname.lower().endswith((".xls", ".xlsx", ".xlsm")):
+        raise HTTPException(status_code=400, detail="CIA file must be .xls, .xlsx, or .xlsm")
+    
+    # Save TC file
+    tc_dest = UPLOAD_DIR / tc_fname
+    counter = 0
+    base = tc_dest.stem
+    ext = tc_dest.suffix
+    while tc_dest.exists():
+        counter += 1
+        tc_dest = UPLOAD_DIR / f"{base}_{counter}{ext}"
+    
+    # Save CIA file
+    cia_dest = UPLOAD_DIR / cia_fname
+    counter = 0
+    base = cia_dest.stem
+    ext = cia_dest.suffix
+    while cia_dest.exists():
+        counter += 1
+        cia_dest = UPLOAD_DIR / f"{base}_{counter}{ext}"
+    
+    try:
+        save_upload_file(tc_file, tc_dest)
+        save_upload_file(cia_file, cia_dest)
+        
+        result = compare_tc_vs_cia(
+            tc_excel_path=str(tc_dest),
+            cia_excel_path=str(cia_dest),
+            tc_filename=tc_fname  # Pass original filename for SIT name derivation
+        )
+        return result
+    finally:
+        # Clean up temporary files
+        try:
+            tc_dest.unlink()
+        except Exception:
+            pass
+        try:
+            cia_dest.unlink()
+        except Exception:
+            pass
